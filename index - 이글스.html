@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>이글스 플레이어</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%231E1B24'/><path d='M9.5 8l7 4-7 4V8z' fill='%23FF8C42'/></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+
+  :root {
+    --bg: #120F15;
+    --surface: #1E1B24;
+    --border: #54363D;
+    --accent: #FF8C42; 
+    --accent2: #00A8A8;
+    --text: #F8EED0;
+    --muted: #A08C95;
+    --gradient: linear-gradient(135deg, var(--accent), #FF5E62);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background-color: var(--bg); 
+    background-image: 
+      radial-gradient(circle at 10% 20%, rgba(255, 140, 66, 0.15) 0%, transparent 40%),
+      radial-gradient(circle at 90% 80%, rgba(0, 168, 168, 0.15) 0%, transparent 40%);
+    background-attachment: fixed;
+    color: var(--text); 
+    font-family: 'Noto Sans KR', sans-serif;
+    min-height: 100vh; 
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    padding: 20px 10px;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none;
+    z-index: 0; 
+    opacity: 0.15; 
+    background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+    filter: contrast(120%) brightness(100%);
+  }
+
+  h1, .subtitle, .app-container, #helpModal {
+    position: relative;
+    z-index: 10;
+  }
+
+  h1 { 
+    font-family: 'Gowun Dodum', sans-serif; 
+    font-size: 2rem; 
+    letter-spacing: 0.05em; 
+    margin-bottom: 6px; 
+    background: var(--gradient); 
+    -webkit-background-clip: text; 
+    -webkit-text-fill-color: transparent; 
+  }
+  .subtitle { color: var(--muted); font-size: 0.8rem; margin-bottom: 20px; }
+
+  .app-container {
+    display: flex;
+    width: 100%;
+    max-width: 1150px;
+    gap: 20px;
+    align-items: flex-start;
+  }
+
+  .sidebar {
+    width: 250px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 15px;
+    position: sticky;
+    top: 20px;
+    max-height: calc(100vh - 40px); 
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .sidebar h2 {
+    font-family: 'Gowun Dodum', sans-serif;
+    font-size: 1.1rem;
+    color: var(--accent);
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .sidebar h2 i {
+    margin-right: 6px;
+    font-size: 1.2rem;
+  }
+
+  .video-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow-y: auto;
+    padding-right: 5px;
+  }
+
+  .room-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px;
+    border-radius: 8px;
+    text-align: left;
+    cursor: pointer;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+  }
+
+  .room-btn:hover {
+    border-color: var(--accent);
+    background: rgba(255, 140, 66, 0.1);
+  }
+
+  .main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 860px;
+  }
+
+  .top-panels { width: 100%; display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+  .settings-box { flex: 1; min-width: 280px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
+  .settings-box h3 {font-family: 'Gowun Dodum', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center;}
+  .settings-box h3 i { font-size: 1.2rem; margin-right: 6px; }
+  
+  .macro-grid { display: grid; grid-template-columns: 1fr; gap: 8px; }
+  
+  .hotkey {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin-right: 6px;
+    font-size: 0.85em;
+    font-weight: bold;
+    color: var(--accent);
+    box-shadow: 0 2px 0 var(--border);
+  }
+
+  .player-wrap { 
+    position: relative; width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 12px; overflow: hidden; 
+    border: 2px solid var(--border); 
+    box-shadow: 0 0 20px rgba(0, 168, 168, 0.15);
+    outline: none; 
+  }
+  .player-wrap:fullscreen { max-width: 100%; width: 100vw; height: 100vh; border: none; border-radius: 0; box-shadow: none; }
+  
+  #youtubePlayer { width: 100%; height: 100%; pointer-events: auto; }
+  #danmakuOverlay { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 10; }
+  
+  #subtitleDisplay {
+    position: absolute;
+    bottom: 30px; 
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    width: auto;
+    max-width: 90%;
+    pointer-events: none;
+    z-index: 20;
+    color: #fff;
+    font-family: 'Gowun Dodum', sans-serif;
+    font-size: 1.1rem;
+    line-height: 1.4;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(2px);
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: none;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    display: none;
+    transition: opacity 0.2s;
+  }
+  
+  #fsInputWrapper {
+    position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); width: 70%;
+    background: rgba(0, 0, 0, 0.7); border: 2px solid var(--accent); border-radius: 30px; padding: 10px 20px;
+    z-index: 9999; display: none; text-align: center;
+  }
+  #fsInput { width: 100%; background: transparent; border: none; color: white; font-size: 1.1rem; outline: none; text-align: center; }
+
+  .controls { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: 0 0 12px 12px; padding: 12px 15px; display: flex; flex-direction: column; gap: 10px; }
+  .progress-wrap { position: relative; height: 4px; background: var(--border); border-radius: 2px; cursor: pointer; }
+  #progressBar { height: 100%; width: 0%; background: var(--gradient); border-radius: 2px; pointer-events: none; }
+  .progress-marker { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.7); pointer-events: none; }
+
+  .ctrl-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  
+  button.ctrl-btn { 
+    background: none; border: none; color: var(--text); cursor: pointer; 
+    padding: 5px; font-size: 1.5rem; 
+    border: 1px solid var(--border); border-radius: 6px; min-width: 36px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  button.ctrl-btn:hover { background: var(--border); color: var(--accent); }
+  
+  .toggle-btn { padding: 5px 10px; border-radius: 20px; font-size: 0.7rem; border: 1px solid var(--border); cursor: pointer; background: none; color: var(--muted); }
+  .toggle-btn.on { border-color: var(--accent); color: var(--accent); background: rgba(255, 140, 66, 0.1); }
+
+  .comment-panel { width: 100%; margin-top: 15px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 15px; }
+  .comment-panel h2 { font-family: 'Gowun Dodum', sans-serif; font-size: 1.1rem; color: var(--muted); margin-bottom: 12px; }
+  
+  .type-btn { background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--muted); padding: 5px 10px; font-size: 0.85rem; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 4px; }
+  .type-btn.selected, .type-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(255, 140, 66, 0.1); }
+  .type-picks { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+
+  .comment-input-row { display: flex; gap: 8px; margin-bottom: 10px; }
+  #commentText { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 9px 12px; outline: none; }
+  .color-dot { width: 22px; height: 22px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; }
+  .color-dot.selected { border-color: #fff; transform: scale(1.2); }
+  .send-btn { 
+    background: var(--gradient); 
+    border: none; border-radius: 8px; color: #fff; padding: 9px 15px; 
+    font-family: 'Gowun Dodum', sans-serif; cursor: pointer; white-space: nowrap; 
+    box-shadow: 0 4px 15px rgba(255, 140, 66, 0.3);
+  }
+  .send-btn:hover { transform: translateY(-2px); }
+
+  .comment-list { margin-top: 16px; max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+  .comment-item { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; padding: 6px 10px; border-radius: 6px; background: var(--bg); cursor: pointer; border: 1px solid transparent; }
+  .comment-item:hover { border-color: var(--border); }
+  .comment-del { margin-left: auto; color: var(--muted); background: none; border: none; cursor: pointer; padding: 2px 5px; }
+  .comment-del:hover { color: var(--accent); }
+
+  .danmaku-item { position: absolute; left: 100%; white-space: nowrap; font-weight: 700; font-family: 'Gowun Dodum', sans-serif; text-shadow: 2px 2px 4px rgba(0,0,0,1); pointer-events: none; will-change: transform; z-index: 100; }
+  .danmaku-top { top: 10px; left: 50%; transform: translateX(-50%); animation: fadeInOut 4s ease forwards; }
+  .danmaku-bottom { bottom: 10px; left: 50%; transform: translateX(-50%); animation: fadeInOut 4s ease forwards; }
+  
+  @keyframes flyLeft { from { transform: translateX(0); } to { transform: translateX(calc(-100vw - 100%)); } }
+  @keyframes fadeInOut { 0% { opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { opacity: 0; } }
+
+  @media (max-width: 900px) {
+    .app-container { flex-direction: column; align-items: center; }
+    .sidebar { width: 100%; max-width: 860px; position: static; }
+    .main-content { max-width: 100%; }
+    h1 { font-size: 1.5rem; }
+    .controls { padding: 10px; }
+    #subtitleDisplay { font-size: 1rem; width: 95%; }
+  }
+  @media (max-width: 600px) {
+    .player-wrap:fullscreen #subtitleDisplay {
+      font-size: 1.2rem !important; 
+      bottom: 60px !important;
+      padding: 6px 12px;
+    }
+  }
+  .modal-overlay {
+    position: fixed !important;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 99999 !important;
+    background: rgba(0,0,0,0.85);
+    display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(5px);
+  }
+  .modal-content {
+    background: var(--surface); border: 1px solid var(--accent);
+    width: 90%; max-width: 500px; padding: 25px; border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative;
+  }
+  .modal-content h2 { font-family: 'Gowun Dodum'; color: var(--accent); margin-bottom: 15px; }
+  .modal-content ul { list-style: none; margin-bottom: 20px; }
+  .modal-content li { margin-bottom: 10px; font-size: 0.9rem; line-height: 1.5; color: var(--text); }
+  .modal-content b { color: var(--accent); }
+  
+  .help-icon { 
+    cursor: pointer; font-size: 1.2rem; color: var(--muted); vertical-align: middle; margin-left: 8px; 
+    transition: 0.2s;
+  }
+  .help-icon:hover { color: var(--accent); transform: scale(1.1); }
+
+  .close-modal-btn {
+    width: 100%; background: var(--gradient);
+    border: none; color: white; padding: 12px; border-radius: 10px;
+    font-family: 'Gowun Dodum'; cursor: pointer; font-weight: bold;
+  }
+
+  ::-webkit-scrollbar { width: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+  
+  button:active, .type-btn:active, .color-dot:active {
+    transform: scale(0.95); transition: transform 0.05s; 
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); } 
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  body { animation: fadeIn 0.8s ease-out; }
+
+  .player-wrap:fullscreen #subtitleDisplay {
+    bottom: 100px !important;  
+    font-size: 2rem !important;  
+    padding: 10px 20px;        
+    max-width: 80%;            
+  }
+
+  .sidebar details {
+    margin-bottom: 5px;
+  }
+  
+  .sidebar summary {
+    list-style: none; 
+    cursor: pointer;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-weight: 700;
+    color: var(--text);
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    user-select: none; 
+  }
+
+  .sidebar summary::-webkit-details-marker {
+    display: none; 
+  }
+
+  .sidebar summary:hover {
+    background: rgba(255, 140, 66, 0.1);
+    color: var(--accent);
+  }
+
+  .sidebar details[open] > summary {
+    color: var(--accent);
+  }
+
+  .folder-medium {
+    margin-left: 15px; 
+    margin-top: 5px;
+  }
+  .folder-medium summary {
+    font-size: 0.85rem;
+    padding: 6px 10px;
+    color: var(--muted);
+  }
+
+  .folder-content {
+    margin-left: 20px;
+    padding-left: 10px;
+    border-left: 1px dashed var(--border); 
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 4px;
+    margin-bottom: 8px;
+  }
+
+  .folder-content .room-btn {
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+  }
+  .folder-content .room-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .room-btn.active {
+    background: rgba(255, 140, 66, 0.15); 
+    color: var(--accent); 
+    border-color: var(--accent); 
+    font-weight: 700;
+  }
+  
+  .room-btn.active i {
+    color: var(--accent);
+  }
+
+</style>
+</head>
+<body>
+
+<h1>커스텀 플레이어<span class="help-icon" id="openHelp">ⓘ</span></h1>
+<p class="subtitle">한화 이글스 다같이 보기</p>
+
+<div class="app-container">
+
+  <aside class="sidebar">
+    <h2><i class="ph-fill ph-list-dashes"></i> 이글스 경기 및 영상</h2>
+    <div class="video-list">
+
+      <details class="folder-large">
+        <summary><i class="ph-fill ph-folder" style="margin-right:6px;"></i> 26시즌</summary>
+        
+        <details class="folder-medium">
+          <summary><i class="ph-fill ph-folder-open" style="margin-right:6px;"></i> 연습경기</summary>
+          <div class="folder-content">
+            <button class="room-btn" onclick="changeRoom('F-AUfAYTmho')">
+              <i class="ph-fill ph-play-circle" style="margin-right:4px;"></i> 3월 3일(vs 삼성)
+            </button>
+            <button class="room-btn" onclick="changeRoom('kFt3DPw3BCw')">
+              <i class="ph-fill ph-play-circle" style="margin-right:4px;"></i> 2월 23일(vs 국대)
+            </button>
+          </div>
+        </details>
+
+        <details class="folder-medium">
+          <summary><i class="ph-fill ph-folder-open" style="margin-right:6px;"></i> 이글스 TV</summary>
+          <div class="folder-content">
+            <button class="room-btn" onclick="changeRoom('Ti7G1NBSVf0')">
+              <i class="ph-fill ph-play-circle" style="margin-right:4px;"></i> 한화 vs kt H/L(03.02)
+            </button>
+          </div>
+        </details>
+      </details>
+
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="top-panels">
+      <div class="settings-box">
+        <h3><i class="ph-fill ph-lightning"></i> 응원 단축키</h3>
+        <div class="macro-grid">
+          <div style="display:flex; gap:5px; align-items:center;">
+            <span class="hotkey">1</span>
+            <input type="text" id="m1" value="최강한화!" style="flex:1; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:6px; border-radius:5px;">
+          </div>
+          <div style="display:flex; gap:5px; align-items:center;">
+            <span class="hotkey">2</span>
+            <input type="text" id="m2" value="아웃!!!!" style="flex:1; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:6px; border-radius:5px;">
+          </div>
+          <div style="display:flex; gap:5px; align-items:center;">
+            <span class="hotkey">3</span>
+            <input type="text" id="m3" value="제발 홈런..." style="flex:1; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:6px; border-radius:5px;">
+          </div>
+          <div style="display:flex; gap:5px; align-items:center;">
+            <span class="hotkey">4</span>
+            <input type="text" id="m4" value="수비 미쳤다" style="flex:1; background:var(--bg); border:1px solid var(--border); color:var(--text); padding:6px; border-radius:5px;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="player-wrap" id="playerWrap" tabindex="0">
+      <div id="youtubePlayer"></div>
+      <div id="danmakuOverlay"></div>
+      <div id="subtitleDisplay"></div>
+      <div id="fsInputWrapper"><input type="text" id="fsInput" placeholder="엔터치고 응원 등록!"></div>
+    </div>
+
+    <div class="controls">
+      <div class="progress-wrap" id="progressWrap"><div id="progressBar"></div></div>
+      <div class="ctrl-row">
+        <button class="ctrl-btn" id="playBtn"><i class="ph ph-fill ph-play"></i></button>
+        
+        <span id="timeDisplay" style="font-size:0.75rem; color:var(--muted);">0:00 / 0:00</span>
+
+        <span style="font-size:0.72rem;color:var(--muted);margin-left:auto;">글자</span>
+        <input type="range" id="fontSizeSlider" min="16" max="48" step="2" value="24" style="width:50px;">
+        
+        <button class="toggle-btn on" id="danmakuToggle">채팅 ON</button>
+
+        <button class="ctrl-btn" id="fullscreenBtn" style="gap:5px; font-size:0.8rem; margin-left:8px;">
+          <i class="ph ph-bold ph-arrows-out-simple"></i> 전체화면</button>
+      </div>
+    </div>
+
+    <div class="comment-panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <h2 style="margin-bottom:0;">실시간 응원석</h2>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <span id="saveStatus" style="font-size:0.72rem;color:var(--accent);font-weight:bold;"></span>
+          <button class="type-btn" id="exportBtn">
+            <i class="ph-bold ph-download-simple"></i> 저장
+          </button>
+        </div>
+      </div>
+
+      <div class="comment-input-row">
+        <input type="text" id="commentText" placeholder="다함께 이글스를 응원해봐요!">
+        <div id="colorPicks" style="display:flex; gap:5px;"></div>
+        <button class="send-btn" id="sendBtn">전송 !</button>
+      </div>
+
+      <div class="type-picks" id="typePicks">
+        <button class="type-btn selected" data-type="flow">흐름</button>
+        <button class="type-btn" data-type="top">상단</button>
+        <button class="type-btn" data-type="bottom">하단</button>
+      </div>
+
+      <div class="comment-list" id="commentList"></div>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+        <label class="type-btn" style="cursor:pointer;">
+          📄 자막 (SRT/VTT)
+          <input type="file" id="subFileInput" accept=".srt,.vtt" style="display:none;">
+        </label>
+        <span id="subStatus" style="font-size:0.78rem;color:var(--muted);"></span>
+      </div>
+    </div>
+  </main>
+  </div>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+  import { getDatabase, ref, push, onChildAdded, onChildRemoved, remove, query, orderByChild, off } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDLpEGH72ozmpMToykoO9OOzdYPolkvRHw",
+    authDomain: "custom-video-player-7d3fb.firebaseapp.com",
+    projectId: "custom-video-player-7d3fb",
+    storageBucket: "custom-video-player-7d3fb.firebasestorage.app",
+    messagingSenderId: "208982129003",
+    appId: "1:208982129003:web:0c0b54479f1141c8cc342e"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  let myId = localStorage.getItem('surfer_uid');
+  if (!myId) {
+    myId = 'user_' + Date.now() + Math.floor(Math.random() * 1000);
+    localStorage.setItem('surfer_uid', myId);
+  }
+
+  const tag = document.createElement('script');
+  tag.src = "https://www.youtube.com/iframe_api";
+  const firstScriptTag = document.getElementsByTagName('script')[0];
+  firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+
+  let player;
+  let comments = []; 
+  let subtitles = [];
+  let shown = new Set();
+  let danmakuOn = true;
+  
+  // 홈페이지 첫 영상 썸네일 
+  let currentVideoKey = 'iI8kKLKIpxo';
+  
+  let animationFrameId = null;
+  let unsubscribeAdded = null;
+  let unsubscribeRemoved = null;
+
+  const LANE_COUNT = 15;
+  const lanes = Array(LANE_COUNT).fill(0);
+
+  const ADMIN_HASH = 'ZGFtbm5u'; 
+
+  window.onYouTubeIframeAPIReady = function() {
+    player = new YT.Player('youtubePlayer', {
+      videoId: currentVideoKey,
+      host: 'https://www.youtube.com', 
+      playerVars: { 'enablejsapi': 1, 'autoplay': 0, 'rel': 0, 'modestbranding': 1 },
+      events: { 'onStateChange': onPlayerStateChange }
+    });
+  };
+
+  function onPlayerStateChange(event) {
+    const btn = document.getElementById('playBtn');
+    
+    if (event.data === YT.PlayerState.PLAYING) {
+      startDanmakuLoop();
+      btn.innerHTML = '<i class="ph ph-fill ph-pause"></i>'; 
+    } else {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      btn.innerHTML = '<i class="ph ph-fill ph-play"></i>';
+    }
+  }
+
+  let dbRef = ref(db, 'comments/' + currentVideoKey);
+
+  window.changeRoom = function(videoId) {
+    currentVideoKey = videoId;
+    
+    document.querySelectorAll('.room-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    
+    const activeBtn = Array.from(document.querySelectorAll('.room-btn')).find(btn => 
+      btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(videoId)
+    );
+    if(activeBtn) activeBtn.classList.add('active');
+    if (player && player.loadVideoById) {
+      player.loadVideoById(currentVideoKey);
+    }
+    
+    comments = [];
+    shown.clear();
+    document.getElementById('commentList').innerHTML = '';
+    document.getElementById('danmakuOverlay').innerHTML = '';
+    document.getElementById('progressWrap').querySelectorAll('.progress-marker').forEach(el => el.remove());
+    
+    dbRef = ref(db, 'comments/' + currentVideoKey);
+    connectDB(); 
+  };
+
+  function connectDB() {
+    if (unsubscribeAdded) unsubscribeAdded();
+    if (unsubscribeRemoved) unsubscribeRemoved();
+
+    unsubscribeAdded = onChildAdded(query(dbRef, orderByChild('time')), (snapshot) => {
+      const data = snapshot.val();
+      data.key = snapshot.key;
+      comments.push(data);
+      comments.sort((a, b) => a.time - b.time);
+      renderList();
+      updateMarkers();
+      if (player && player.getPlayerState && player.getPlayerState() === 1) {
+        const now = player.getCurrentTime();
+        if (Math.abs(data.time - now) < 2) {
+           spawnDanmaku(data);
+           shown.add(data.id);
+        }
+      }
+    });
+
+    unsubscribeRemoved = onChildRemoved(dbRef, (snapshot) => {
+      const key = snapshot.key;
+      comments = comments.filter(c => c.key !== key);
+      renderList();
+      updateMarkers();
+    });
+  }
+  
+  connectDB();
+
+  function processNewComment(text) {
+    if (!player) return;
+    const newComment = {
+      id: Date.now(),
+      userId: myId, 
+      time: player.getCurrentTime(),
+      text: text,
+      color: selectedColor,
+      type: selectedType
+    };
+    push(dbRef, newComment);
+    const status = document.getElementById('saveStatus');
+    status.textContent = '☁️ 전송!';
+    setTimeout(() => status.textContent = '', 2000);
+  }
+
+   window.deleteComment = function(key, isMine) {
+    if (isMine) {
+      if(confirm('이 댓글을 지울까요?')) {
+        remove(ref(db, 'comments/' + currentVideoKey + '/' + key));
+      }
+    } 
+    else {
+      const input = prompt("🔐 관리자 비밀번호를 입력하세요:");
+      if (input === null) return; 
+
+      if (btoa(input) === ADMIN_HASH) {
+        remove(ref(db, 'comments/' + currentVideoKey + '/' + key));
+        alert("관리자 권한으로 삭제했습니다! 😎");
+      } else {
+        alert("비밀번호가 틀렸습니다! ⛔");
+      }
+    }
+  }
+
+  function renderList() {
+    const list = document.getElementById('commentList');
+    list.innerHTML = '';
+    comments.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'comment-item';
+      
+      const isMine = c.userId === myId;
+      
+      const delBtn = `<button class="comment-del" onclick="deleteComment('${c.key}', ${isMine})">✕</button>`;
+
+      item.innerHTML = `
+        <span style="color:var(--accent); font-family:monospace;">${fmtTime(c.time)}</span>
+        <span style="flex:1">${escHtml(c.text)}</span>
+        ${delBtn}
+      `;
+      item.onclick = (e) => { 
+        if(e.target.className !== 'comment-del') { 
+          player.seekTo(c.time, true); 
+          shown.clear(); 
+          document.getElementById('danmakuOverlay').innerHTML = '';
+        } 
+      };
+      list.appendChild(item);
+    });
+    list.scrollTop = list.scrollHeight;
+  }
+
+  function updateMarkers() {
+    const wrap = document.getElementById('progressWrap');
+    wrap.querySelectorAll('.progress-marker').forEach(e => e.remove());
+    if (!player || !player.getDuration) return;
+    const dur = player.getDuration();
+    comments.forEach(c => {
+      const marker = document.createElement('div'); 
+      marker.className = 'progress-marker';
+      marker.style.left = (c.time / dur * 100) + '%'; 
+      marker.style.background = c.color;
+      wrap.appendChild(marker);
+    });
+  }
+
+  function startDanmakuLoop() {
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    function loop() {
+      if (!player || !player.getCurrentTime) return;
+      if (player.getPlayerState() !== YT.PlayerState.PLAYING) return;
+      const now = player.getCurrentTime();
+      const dur = player.getDuration();
+      if(dur) {
+        document.getElementById('progressBar').style.width = (now / dur) * 100 + '%';
+        document.getElementById('timeDisplay').textContent = `${fmtTime(now)} / ${fmtTime(dur)}`;
+      }
+      comments.forEach(c => {
+        if (danmakuOn && !shown.has(c.id) && c.time <= now && c.time > now - 0.5) {
+          spawnDanmaku(c);
+          shown.add(c.id);
+        }
+      });
+      const subDiv = document.getElementById('subtitleDisplay');
+      const activeSub = subtitles.find(s => now >= s.start && now <= s.end);
+      if (activeSub) {
+        subDiv.style.display = 'block';
+        subDiv.innerHTML = activeSub.text; 
+      } else {
+        subDiv.style.display = 'none';
+      }
+      animationFrameId = requestAnimationFrame(loop);
+    }
+    loop();
+  }
+
+  function findLane(now) {
+    let best = 0;
+    for (let i = 0; i < LANE_COUNT; i++) {
+      if (lanes[i] < lanes[best]) best = i;
+    }
+    return best;
+  }
+
+  function spawnDanmaku(c) {
+    const el = document.createElement('div');
+    el.className = 'danmaku-item'; 
+    el.textContent = c.text; 
+    el.style.color = c.color;
+    
+    const isMobile = window.innerWidth < 600;
+    const baseSize = parseInt(document.getElementById('fontSizeSlider').value);
+    const finalSize = isMobile ? baseSize * 0.6 : baseSize;
+    el.style.fontSize = finalSize + 'px';
+
+    const overlay = document.getElementById('danmakuOverlay');
+    if (c.type === 'top') {
+      el.className += ' danmaku-top';
+    } else if (c.type === 'bottom') {
+      el.className += ' danmaku-bottom';
+    } else {
+      const lane = findLane(player.getCurrentTime());
+      const laneH = (overlay.offsetHeight || 400) / LANE_COUNT;
+      el.style.top = (lane * laneH) + 'px'; 
+      
+      const speedSlider = document.getElementById('speedSlider');
+      const speedVal = speedSlider ? parseFloat(speedSlider.value) : 1; 
+      const duration = 8 / speedVal; 
+      el.style.animation = `flyLeft ${duration}s linear forwards`;
+      lanes[lane] = player.getCurrentTime() + (duration * 0.4); 
+    }
+    overlay.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+
+  function parseSRT(data) { 
+    data = data.replace(/\r\n|\r/g, '\n'); 
+    const regex = /(\d+:\d{2}:\d{2}[,.]\d{3}) --> (\d+:\d{2}:\d{2}[,.]\d{3})/g;
+    const items = [];
+    let array = data.split('\n\n');
+    array.forEach(block => {
+      const match = regex.exec(block);
+      if (match) {
+        const start = timeToSec(match[1]);
+        const end = timeToSec(match[2]);
+        const parts = block.split(match[0]);
+        if(parts[1]) {
+          let cleanText = escHtml(parts[1].trim());
+          cleanText = cleanText.replace(/\n/g, '<br>');
+          items.push({ start, end, text: cleanText });
+        }
+      }
+      regex.lastIndex = 0;
+    });
+    return items;
+  }
+
+  function escHtml(str) { return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function timeToSec(str) { const p = str.replace(',', '.').split(':'); return (parseFloat(p[0]) * 3600) + (parseFloat(p[1]) * 60) + parseFloat(p[2]); }
+  function fmtTime(s) { if (isNaN(s)) return '0:00'; const m = Math.floor(s / 60); const sec = Math.floor(s % 60).toString().padStart(2, '0'); return `${m}:${sec}`; }
+  
+  document.getElementById('playBtn').addEventListener('click', () => {
+    if (!player) return;
+    if (player.getPlayerState() === 1) player.pauseVideo(); else player.playVideo();
+  });
+  
+  document.getElementById('progressWrap').addEventListener('click', e => {
+    if(!player || !player.getDuration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pos = (e.clientX - rect.left) / rect.width;
+    player.seekTo(player.getDuration() * pos, true);
+    shown.clear(); 
+    document.getElementById('danmakuOverlay').innerHTML = '';
+  });
+
+  document.getElementById('exportBtn').addEventListener('click', () => {
+    if (!comments.length) return alert('댓글이 없습니다!');
+    const blob = new Blob([JSON.stringify(comments, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = currentVideoKey + '_backup.json'; a.click();
+  });
+
+  document.getElementById('subFileInput').addEventListener('change', e => {
+    const file = e.target.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => { subtitles = parseSRT(ev.target.result); document.getElementById('subStatus').textContent = `✅ ${file.name}`; };
+    reader.readAsText(file, 'UTF-8'); e.target.value = '';
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+      document.getElementById('fsInputWrapper').style.display = 'none'; 
+      document.getElementById('fsInput').value = ''; 
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    const isFS = !!document.fullscreenElement;
+    const fsWrapper = document.getElementById('fsInputWrapper');
+    const fsInput = document.getElementById('fsInput');
+
+    if (isFS && e.key === 'Enter') {
+      e.preventDefault(); 
+      if (getComputedStyle(fsWrapper).display === 'none') {
+        fsWrapper.style.display = 'block';
+        fsInput.focus();
+      } 
+      else {
+        if (fsInput.value.trim()) processNewComment(fsInput.value.trim());
+        fsInput.value = '';
+        fsWrapper.style.display = 'none';
+        document.getElementById('playerWrap').focus(); 
+      }
+      return;
+    }
+
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    if (e.key === 'f' || e.key === 'F' || e.key === 'ㄹ') { 
+      const wrap = document.getElementById('playerWrap');
+      if (!document.fullscreenElement) { 
+        wrap.requestFullscreen(); 
+        wrap.focus(); 
+      } else { 
+        document.exitFullscreen(); 
+      }
+    }
+
+    if (e.code === 'Space') { 
+      if(player && player.getPlayerState) {
+         if (player.getPlayerState() === 1) player.pauseVideo(); else player.playVideo(); 
+         e.preventDefault(); 
+      }
+    }
+
+    const macroKeys = { '1': 'm1', '2': 'm2', '3': 'm3', '4': 'm4' };
+    if (macroKeys.hasOwnProperty(e.key)) {
+      const inputEl = document.getElementById(macroKeys[e.key]);
+      if (inputEl && inputEl.value.trim()) {
+        processNewComment(inputEl.value.trim());
+        const hotkeySpan = inputEl.previousElementSibling;
+        if(hotkeySpan) {
+            hotkeySpan.style.background = 'var(--accent)';
+            hotkeySpan.style.color = 'white';
+            setTimeout(() => {
+                hotkeySpan.style.background = 'rgba(255,255,255,0.05)';
+                hotkeySpan.style.color = 'var(--accent)';
+            }, 150);
+        }
+      }
+    }
+  });
+
+  document.getElementById('commentText').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('sendBtn').click();
+    }
+  });
+
+  const COLORS = ['#ffffff', '#ff4d6d', '#ffd166', '#06d6a0', '#a78bfa'];
+  let selectedColor = COLORS[0]; 
+  let selectedType = 'flow';
+  
+  const colorPicks = document.getElementById('colorPicks');
+  COLORS.forEach(c => {
+    const dot = document.createElement('div'); dot.className = 'color-dot' + (c === selectedColor ? ' selected' : ''); dot.style.background = c;
+    dot.onclick = () => { selectedColor = c; document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('selected')); dot.classList.add('selected'); };
+    colorPicks.appendChild(dot);
+  });
+  
+  document.querySelectorAll('.type-picks .type-btn').forEach(btn => {
+    btn.addEventListener('click', () => { selectedType = btn.dataset.type; document.querySelectorAll('.type-picks .type-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); });
+  });
+
+  document.getElementById('sendBtn').onclick = () => { 
+    const input = document.getElementById('commentText'); 
+    if (input.value.trim()) { 
+      processNewComment(input.value.trim()); 
+      input.value = ''; 
+    } 
+  };
+  
+  document.getElementById('fullscreenBtn').onclick = () => { 
+    const wrap = document.getElementById('playerWrap'); 
+    if (!document.fullscreenElement) { wrap.requestFullscreen(); wrap.focus(); } else document.exitFullscreen(); 
+  };
+  
+  document.getElementById('danmakuToggle').onclick = function() { 
+    danmakuOn = !danmakuOn; 
+    this.classList.toggle('on'); 
+    this.textContent = danmakuOn ? '채팅 ON' : '채팅 OFF'; 
+    if(!danmakuOn) document.getElementById('danmakuOverlay').innerHTML = ''; 
+  };
+  
+  const modal = document.getElementById('helpModal');
+  document.getElementById('openHelp').onclick = () => modal.style.display = 'flex';
+  document.getElementById('closeHelp').onclick = () => modal.style.display = 'none';
+  modal.onclick = (e) => { if(e.target === modal) modal.style.display = 'none'; };
+  setTimeout(() => changeRoom(currentVideoKey), 100);
+
+</script>
+
+<div class="modal-overlay" id="helpModal">
+  <div class="modal-content">
+    <h2> 이글스 응원방 가이드</h2>
+    <ul>
+      <li>📺 <b>저작권:</b> 유튜브 공식 영상을 가져와서 댓글만 각 방의 서버에 저장하는 방식이라, 여기서 봐도 <b>유튜브 조회수가 올라감</b>!</li>
+      <li>💻 <b>환경 최적화:</b> <b>pc 화면에 최적화</b>되어 있어요. 다같이 크게 보면서 응원합시다!</li>
+      <li>⌨️ <b>단축키:</b><br>
+        - [F] : 전체화면 <b>(주의: 유튜브 자체 전체화면 말고 꼭! 키보드 F나 '전체화면' 버튼을 눌러야 채팅창이 생겨요)</b><br>
+        - [Space] : 재생/일시정지<br>
+        - [Enter] : 전체화면에서 채팅창 열기/전송<br>
+        - [1~4] : 지정된 응원 매크로 즉시 전송
+      </li>
+    </ul>
+    <button class="close-modal-btn" id="closeHelp">확인, 응원 하러 가기!</button>
+  </div>
+</div>
+</body>
+</html>
