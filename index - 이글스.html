@@ -5,7 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>이글스 플레이어</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='12' fill='%231E1B24'/><path d='M9.5 8l7 4-7 4V8z' fill='%23FF8C42'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' (cy='12' r='12' fill='%231E1B24'/><path d='M9.5 8l7 4-7 4V8z' fill='%23FF8C42'/></svg>">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Gowun+Dodum&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
@@ -948,7 +948,6 @@
   document.getElementById('openHelp').onclick = () => modal.style.display = 'flex';
   document.getElementById('closeHelp').onclick = () => modal.style.display = 'none';
   modal.onclick = (e) => { if(e.target === modal) modal.style.display = 'none'; };
-  setTimeout(() => changeRoom(currentVideoKey), 100);
 
 </script>
 
