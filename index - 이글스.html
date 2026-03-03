@@ -947,8 +947,7 @@
   const modal = document.getElementById('helpModal');
   document.getElementById('openHelp').onclick = () => modal.style.display = 'flex';
   document.getElementById('closeHelp').onclick = () => modal.style.display = 'none';
-  modal.onclick = (e) => { if(e.target === modal) modal.style.display = 'none'; };
-  setTimeout(() => changeRoom(currentVideoKey), 100);
+  modal.onclick = (e) => { if(e.target === modal) modal.style.display = 'none'; }
   
 </script>
 
